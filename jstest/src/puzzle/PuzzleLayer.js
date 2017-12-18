@@ -15,18 +15,22 @@ var PuzzleLayer = cc.Layer.extend({
     this.heightCount = hcnt;
     cc.log("PuzzleLayer::init " + this.widthCount + "," + this.heightCount);
 
+    var vorigin = cc.director.getVisibleOrigin();
+    var vsize = cc.director.getVisibleSize();
+
+
     //各種state
     this.runningMatchAnime = false;
 
     var size = cc.winSize;
 
     //サイズ
-    var w = size.width * 1.0;
+    var w = vsize.width;
     var h = size.height * 0.5;
     this.layerSize = cc.size(w, h)
 
     //bg
-    var lc = new cc.LayerColor(cc.color(200, 200, 200, 255), w, h);
+    var lc = new cc.LayerColor(cc.color(200, 200, 200, 255), vsize.width, vsize.height);
     this.addChild(lc, 0);
 
     //一個あたりのサイズ
@@ -56,6 +60,7 @@ var PuzzleLayer = cc.Layer.extend({
     this.isGameEnd = false;
 
     this.setContentSize( cc.size(size.width,ballSize*hcnt) );
+    this.setPosition( vorigin.x , vorigin.y );
 
     return true;
   },
@@ -1028,8 +1033,15 @@ var PuzzleBallSprite = cc.Sprite.extend({
 
     var tp = touch.getLocation();
 
+
+
     var adjx = 0;
     var adjy = 50;
+
+    var vorigin = cc.director.getVisibleOrigin();
+    tp.x -= vorigin.x;
+    tp.y -= vorigin.y;
+
 
     //    this.setPosition(cc.p(tp.x+adjx,tp.y+adjy));
     this.setPosition(tp);
@@ -1202,8 +1214,17 @@ var puzzleLayerListener = cc.EventListener.create({
     }
 
     var tp = touch.getLocation();
+
+    var vorigin = cc.director.getVisibleOrigin();
+    var vsize = cc.director.getVisibleSize();
+    tp.x -= vorigin.x;
+    tp.y -= vorigin.y;
+
     _puzzleLayer.currentBall = null;
     _puzzleLayer.moveBall = null;
+
+//    cc.log(touch.getLocation());
+//    cc.log(touch.getLocationInView());
 
 
     //スプライト当たり判定
@@ -1487,6 +1508,10 @@ var puzzleLayerListener = cc.EventListener.create({
   getTouchBall: function(touch) {
 
     var tp = touch.getLocation();
+
+    var vorigin = cc.director.getVisibleOrigin();
+    tp.x -= vorigin.x;
+    tp.y -= vorigin.y;
 
     //スプライト当たり判定
     var list = _puzzleLayer.spriteList;

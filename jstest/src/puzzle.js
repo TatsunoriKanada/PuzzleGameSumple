@@ -29,15 +29,6 @@ var PuzzleMainLayer = cc.Layer.extend({
     // ask the window size
     var size = cc.winSize;
 
-    var sprite2 = new cc.Sprite(res.bg_jpg);
-    sprite2.attr({
-      x: size.width / 2,
-      y: size.height / 2
-    });
-    var col = 200;
-    sprite2.setColor( cc.color(col,col,col,255));
-    this.addChild(sprite2, 0)
-
 
 
     cc.log("ctor:function rule="+PZG_RULE_TYPE)
