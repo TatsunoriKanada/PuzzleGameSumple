@@ -12,6 +12,9 @@ var HelloWorldLayer = cc.Layer.extend({
     // ask the window size
     var size = cc.winSize;
 
+    var vorigin = cc.director.getVisibleOrigin();
+    var vsize = cc.director.getVisibleSize();
+
 
     //画面周り出力してみる
     cc.log("cc.winSize " + cc.winSize.width + "," + cc.winSize.height)
@@ -83,8 +86,9 @@ var HelloWorldLayer = cc.Layer.extend({
     //バージョン
     if(1) {
       var lb = new cc.LabelTTF(PZG_VERSION,  'Times New Roman', 32 );
+      lb.setAnchorPoint(0,1);
       lb.setColor( cc.color(255,255,255,255) );
-      lb.setPosition(300,200);
+      lb.setPosition(vorigin.x,vorigin.y+vsize.height);
       this.addChild(lb);
     }
 
