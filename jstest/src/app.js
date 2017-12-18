@@ -80,6 +80,14 @@ var HelloWorldLayer = cc.Layer.extend({
     // add the label as a child to this layer
     this.addChild(locallabel, 5);
 
+    //バージョン
+    if(1) {
+      var lb = new cc.LabelTTF(PZG_VERSION,  'Times New Roman', 32 );
+      lb.setColor( cc.color(255,255,255,255) );
+      lb.setPosition(300,200);
+      this.addChild(lb);
+    }
+
 
     return true;
   },
