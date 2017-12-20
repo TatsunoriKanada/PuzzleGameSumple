@@ -382,11 +382,21 @@ var PuzzleLayer = cc.Layer.extend({
     var i;
     for (i = 0; i < list.length; i++) {
       var sp = list[i];
+
       var pos = sp.getBallPosition();
 
       //左下が0,0,右上が一番でかい
       var idx = pos.x + (pos.y * wcnt);
-      collist[idx] = sp.puzzleColor;
+
+      if( sp.isGrabBall() == true ) {
+        //掴まれてるやつは消せないようにする
+//        cc.log("つかまれ");
+        collist[idx] = PZG_BALL_COLOR_MYCHAR;
+      }
+      else {
+        collist[idx] = sp.puzzleColor;
+      }
+
 
     }
 
@@ -937,17 +947,22 @@ var PuzzleLayer = cc.Layer.extend({
   onControlTimeout:function() {
     cc.log("onControlTimeout");
 
+
+    if (_puzzleLayer.currentBall != null) {
+      _puzzleLayer.currentBall.onReleaseBall();
+    }
+
     //マッチチェック
     _puzzleLayer.checkMatchPuzzle(true);
 
     if (_puzzleLayer.currentBall != null) {
-      _puzzleLayer.currentBall.onReleaseBall();
       _puzzleLayer.currentBall = null;
     }
     if (_puzzleLayer.moveBall != null) {
       _puzzleLayer.moveBall.removeFromParent();
       _puzzleLayer.moveBall = null;
     }
+
 
     //操作終了
     puzzleLogic.onBallRelease();
@@ -983,6 +998,7 @@ var PuzzleBallSprite = cc.Sprite.extend({
     this.isMatch = false;
     this._temppos = null;
     this.isMyChar = false;
+    this.isGrab = false;
 
     //マイキャラフラグ
     if (color == PZG_BALL_COLOR_MYCHAR) {
@@ -1017,6 +1033,7 @@ var PuzzleBallSprite = cc.Sprite.extend({
 
     //掴まれたら少し透過させる
     this.setOpacity(128);
+    this.isGrab = true;
 
   },
   //リリース
@@ -1024,8 +1041,14 @@ var PuzzleBallSprite = cc.Sprite.extend({
 
     //透過を戻す
     this.setOpacity(255);
+    this.isGrab = false;
 
 
+  },
+
+  //捕まれ状態か
+  isGrabBall: function() {
+    return this.isGrab;
   },
 
   //タッチポイントに追従
@@ -1297,7 +1320,7 @@ var puzzleLayerListener = cc.EventListener.create({
 
 
       if (1) {
-        //        this.getMoveTraceBalls(touch);
+//        this.getMoveTraceBalls(touch);
       }
       //      var sp = _puzzleLayer.currentBall;
 
@@ -1384,6 +1407,8 @@ var puzzleLayerListener = cc.EventListener.create({
 
     var path = [];
 
+    var startballpos = _puzzleLayer.screenPosToIndex(stpos.x, stpos.y);
+
     if (cnt == 0) {
 
 
@@ -1454,7 +1479,7 @@ var puzzleLayerListener = cc.EventListener.create({
     //    cc.log("addxy " + addx + "," + addy);
 
     if (path.length > 1) {
-      cc.log("trace " + path);
+      cc.log("trace "+startballpos+" -> " + path);
     }
 
     return path;
