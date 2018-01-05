@@ -59,8 +59,10 @@ var PuzzleLayer = cc.Layer.extend({
     this.mycharSprite = null;
     this.isGameEnd = false;
 
-    this.setContentSize( cc.size(size.width,ballSize*hcnt) );
-    this.setPosition( vorigin.x , vorigin.y );
+    this.setContentSize(cc.size(size.width, ballSize * hcnt));
+    this.setPosition(vorigin.x, vorigin.y);
+
+    this.isMatchRunning = false;
 
     return true;
   },
@@ -318,6 +320,159 @@ var PuzzleLayer = cc.Layer.extend({
 
   },
 
+  //複数入れ替え
+  swapPuzzleBallMulti: function(swapDict) {
+
+    var i;
+    var keys = Object.keys(swapDict);
+    var ballDict = {};
+
+    for(i=0 ; i < keys.length ; i++) {
+      var srcidx = keys[i];
+      var pos1 = puzzleLogic.indexToPos(srcidx);
+      var ball = this.getBallAtPosition(pos1.x,pos1.y);
+
+      ballDict[srcidx] = ball;
+    }
+
+    for(i=0 ; i < keys.length ; i++) {
+      var srcidx = keys[i];
+      var dstidx = swapDict[srcidx];
+
+
+      var pos1 = puzzleLogic.indexToPos(srcidx);
+      var pos2 = puzzleLogic.indexToPos(dstidx);
+
+      var disp1 = _puzzleLayer.puzzlePosToScreen(pos1.x, pos1.y);
+      var disp2 = _puzzleLayer.puzzlePosToScreen(pos2.x, pos2.y);
+
+      var ball = ballDict[srcidx];
+
+      //パズル位置更新
+      ball.setBallPosition(pos2);
+
+
+      //アニメ実行
+      ball.stopAllActions();
+
+      //移動中だった場合の考慮
+      if (ball._temppos != null) {
+        ball.setPosition(ball._temppos)
+      }
+
+      //移動中フラグ
+      ball.isMoving = true;
+
+      //操作中の玉の場合はフラグ消す
+      if (ball == _puzzleLayer.currentBall) {
+        ball.isMoving = false;
+      }
+
+      //一個目
+      var a1 = this.createSwapBezier(disp1, disp2);
+      var f1 = cc.callFunc(function() {
+
+        this.setPosition(this._temppos);
+        this._temppos = null;
+        this.isMoving = false;
+
+      }, ball);
+      var sq1 = cc.sequence(a1, f1);
+      ball._temppos = disp2; //アニメ後、微妙に位置ずれするので後で再生設定
+      ball.runAction(sq1);
+
+
+    }
+
+
+
+    /*
+    var pos1 = ball1.getBallPosition();
+    var pos2 = ball2.getBallPosition();
+
+    var disp1 = _puzzleLayer.puzzlePosToScreen(pos1.x, pos1.y);
+    var disp2 = _puzzleLayer.puzzlePosToScreen(pos2.x, pos2.y);
+    //    var disp1 = ball1.getPosition();
+    //    var disp2 = ball2.getPosition();
+
+    //パズル位置更新
+    ball1.setBallPosition(pos2);
+    ball2.setBallPosition(pos1);
+
+    //アニメは不安定
+    var isAnime = true;
+
+
+    if (isAnime == false) {
+      //表示座標更新
+      ball1.setPosition(disp2);
+      ball2.setPosition(disp1);
+    } else {
+
+      //アニメテスト
+      ball1.stopAllActions();
+      ball2.stopAllActions();
+
+      //移動中だった場合の考慮
+      if (ball1._temppos != null) {
+        ball1.setPosition(ball1._temppos)
+      }
+      if (ball2._temppos != null) {
+        ball2.setPosition(ball2._temppos)
+      }
+
+      //移動中フラグ
+      ball1.isMoving = true;
+      ball2.isMoving = true;
+
+      //操作中の玉の場合はフラグ消す
+      if (ball1 == _puzzleLayer.currentBall) {
+        ball1.isMoving = false;
+      } else if (ball2 == _puzzleLayer.currentBall) {
+        ball2.isMoving = false;
+      }
+
+      //移動するのがマイキャラの場合はフラグを消す
+      if (ball1.isMyChar == true) {
+        //        ball1.isMoving = false;
+      } else if (ball2.isMyChar == true) {
+        //        ball2.isMoving = false;
+      }
+
+      //一個目
+      var a1 = this.createSwapBezier(disp1, disp2);
+      var f1 = cc.callFunc(function() {
+
+        this.setPosition(this._temppos);
+        this._temppos = null;
+        this.isMoving = false;
+
+      }, ball1);
+      var sq1 = cc.sequence(a1, f1);
+      ball1._temppos = disp2; //アニメ後、微妙に位置ずれするので後で再生設定
+      ball1.runAction(sq1);
+
+      //二個目
+      var a2 = this.createSwapBezier(disp2, disp1);
+      var f2 = cc.callFunc(function() {
+
+        this.setPosition(this._temppos);
+        this._temppos = null;
+        this.isMoving = false;
+
+      }, ball2);
+      var sq2 = cc.sequence(a2, f2);
+      ball2._temppos = disp1; //アニメ後、微妙に位置ずれするので後で再生設定
+      ball2.runAction(sq2);
+
+    }
+    */
+
+
+
+
+  },
+
   //入れ替えアニメ生成
   //始点と終点を指定する
   createSwapBezier: function(disp1, disp2) {
@@ -371,6 +526,25 @@ var PuzzleLayer = cc.Layer.extend({
 
   },
 
+  //positionからボール取得
+  getBallAtPosition:function(x,y) {
+
+    var list = this.spriteList
+    var i;
+    for (i = 0; i < list.length; i++) {
+      var sp = list[i];
+
+      var pos = sp.getBallPosition();
+
+      if( pos.x == x && pos.y == y ) {
+        return sp;
+      }
+    }
+
+    return null;
+
+  },
+
   //現在のボード色状態を配列で取得
   getBoardColorList: function() {
 
@@ -388,12 +562,11 @@ var PuzzleLayer = cc.Layer.extend({
       //左下が0,0,右上が一番でかい
       var idx = pos.x + (pos.y * wcnt);
 
-      if( sp.isGrabBall() == true ) {
+      if (sp.isGrabBall() == true) {
         //掴まれてるやつは消せないようにする
-//        cc.log("つかまれ");
+        //        cc.log("つかまれ");
         collist[idx] = PZG_BALL_COLOR_MYCHAR;
-      }
-      else {
+      } else {
         collist[idx] = sp.puzzleColor;
       }
 
@@ -447,7 +620,7 @@ var PuzzleLayer = cc.Layer.extend({
   //消えるチェック＆スタート
   checkMatchPuzzle: function(removeCurrent) {
 
-    cc.log("checkMatchPuzzle");
+    cc.log("checkMatchPuzzle running="+this.isMatchRunning+",removeCurrent="+removeCurrent);
 
     var wcnt = puzzleLogic.getPuzzleWidthCount();
     var hcnt = puzzleLogic.getPuzzleHeightCount();
@@ -508,8 +681,8 @@ var PuzzleLayer = cc.Layer.extend({
     }
 
     //操作玉を消す
-    cc.log("removecurrent "+removeCurrent);
-    if( removeCurrent == true && this.currentBall != null ) {
+//    cc.log("removecurrent " + removeCurrent);
+    if (removeCurrent == true && this.currentBall != null) {
 
       var dict = {};
       dict["pos"] = this.currentBall.getBallPosition();
@@ -517,7 +690,7 @@ var PuzzleLayer = cc.Layer.extend({
       dict["cnt"] = 1;
       dict["dir"] = 1;
 
-//      cc.log(dict);
+      //      cc.log(dict);
       matchList.push(dict);
 
     }
@@ -525,6 +698,11 @@ var PuzzleLayer = cc.Layer.extend({
 
     if (matchList.length > 0) {
       //消す処理へ
+      cc.log("startMatchAnime");
+      cc.log(matchList);
+
+      this.isMatchRunning = true;
+
       this.runningMatchAnime = true;
       this.matchList = matchList;
       this.startMatchAnime();
@@ -532,6 +710,8 @@ var PuzzleLayer = cc.Layer.extend({
       return true;
 
     }
+
+    this.isMatchRunning = false;
 
     return false;
 
@@ -610,8 +790,6 @@ var PuzzleLayer = cc.Layer.extend({
 
 
     }
-
-    cc.log("startMatchAnime")
 
     //1色ずつ消してゆく(パズドラ風)
     this.currentMatchColor = 0;
@@ -944,7 +1122,7 @@ var PuzzleLayer = cc.Layer.extend({
   },
 
   //操作時間切れ
-  onControlTimeout:function() {
+  onControlTimeout: function() {
     cc.log("onControlTimeout");
 
 
@@ -973,6 +1151,8 @@ var PuzzleLayer = cc.Layer.extend({
 
 
 
+
+
   //パズル座標を画面座標に変換
   puzzlePosToScreen: function(x, y) {
     //    getBallPosition: function(x, y) {
@@ -981,6 +1161,90 @@ var PuzzleLayer = cc.Layer.extend({
     var dy = y * this.ballPixelSize + (this.ballPixelSize / 2);
 
     return cc.p(dx, dy);
+  },
+
+  //操作テスト
+  testPuzzle1: function() {
+    cc.log("testPuzzle1");
+
+    //どれかを擬似的につかんで一気に入れ替えテスト
+
+    _puzzleLayer.currentBall = this.getBallAtPosition(0,0);
+    _puzzleLayer.currentBall.onGrabBall();
+
+    //開始
+    puzzleLogic.startMove(_puzzleLayer.currentBall.getBallPosition());
+
+
+
+//    var path = [0,7,8,9,10,17];
+    var path = [0,1,2,3,4,5,6];
+    var tolist = {};
+    var movepath = [];
+
+
+    var pos = _puzzleLayer.currentBall.getBallPosition();
+    var srcpos = puzzleLogic.posToIndex(pos.x,pos.y);
+    var originpos = srcpos;
+
+
+
+
+    var i;
+    for(i=0 ; i < path.length ; i++) {
+      var dstpos = path[i];
+      if( srcpos != dstpos ) {
+
+        var p1 = puzzleLogic.indexToPos(srcpos);
+        var p2 = puzzleLogic.indexToPos(dstpos);
+
+        if( puzzleLogic.checkSwap(p1,p2) == true ) {
+
+          movepath.push(dstpos);
+          tolist[originpos] = dstpos;
+          tolist[dstpos] = srcpos;
+
+//          cc.log(tolist);
+//          cc.log(srcpos+" -> "+dstpos);
+
+          srcpos = dstpos;
+        }
+        else {
+          break;
+        }
+
+      }
+    }
+
+    //パス更新
+    for(i=0 ; i < movepath.length ; i++) {
+      var pos = puzzleLogic.indexToPos(movepath[i]);
+
+      puzzleLogic.movePuzzle(pos);
+    }
+
+
+    this.swapPuzzleBallMulti(tolist);
+
+    /*
+    //OKなので位置替え
+    puzzleLogic.movePuzzle(pos2);
+
+    //行ける方向更新
+    if (puzzleLogic.enableDirRestriction() == true) {
+      //          if (puzzleLogic.enableMyCharMode() == true) {
+      _puzzleLayer.moveBall.updateIndicator(puzzleLogic.checkValidDir(), puzzleLogic.getCurrentDir());
+
+    }
+
+
+    //演出は後で
+    _puzzleLayer.swapPuzzleBall(_puzzleLayer.currentBall, ball);
+    */
+
+
+
+
   }
 
 });
@@ -1246,8 +1510,8 @@ var puzzleLayerListener = cc.EventListener.create({
     _puzzleLayer.currentBall = null;
     _puzzleLayer.moveBall = null;
 
-//    cc.log(touch.getLocation());
-//    cc.log(touch.getLocationInView());
+    //    cc.log(touch.getLocation());
+    //    cc.log(touch.getLocationInView());
 
 
     //スプライト当たり判定
@@ -1319,10 +1583,6 @@ var puzzleLayerListener = cc.EventListener.create({
     if (_puzzleLayer.currentBall != null) {
 
 
-      if (1) {
-//        this.getMoveTraceBalls(touch);
-      }
-      //      var sp = _puzzleLayer.currentBall;
 
       //移動させてみる
       _puzzleLayer.moveBall.setTouchPosition(touch);
@@ -1332,48 +1592,131 @@ var puzzleLayerListener = cc.EventListener.create({
       }
       //      sp.setPosition(tp);
 
-      //入れ替えチェック
-      var ball = this.getTouchBall(touch);
-      if (ball != null && ball.isPuzzleActive() == true) {
+      //複数入れ替え
+      var path = [];
+      if ( puzzleLogic.enableMultiSwap() == true ) {
+        path = this.getMoveTraceBalls(touch);
+      }
+
+      if (path.length > 1) {
+
+        var tolist = {};
+        var movepath = [];
 
 
-        var pos1 = _puzzleLayer.currentBall.getBallPosition();
-        var pos2 = ball.getBallPosition();
+        var pos = _puzzleLayer.currentBall.getBallPosition();
+        var srcpos = puzzleLogic.posToIndex(pos.x,pos.y);
+        var originpos = srcpos;
 
-        if (puzzleLogic.checkSwap(pos1, pos2) == true) {
+        var i;
+        for(i=0 ; i < path.length ; i++) {
+          var dstpos = path[i];
+          if( srcpos != dstpos ) {
 
-          //OKなので位置替え
-          puzzleLogic.movePuzzle(pos2);
+            var p1 = puzzleLogic.indexToPos(srcpos);
+            var p2 = puzzleLogic.indexToPos(dstpos);
 
-          //行ける方向更新
-          if (puzzleLogic.enableDirRestriction() == true) {
-            //          if (puzzleLogic.enableMyCharMode() == true) {
-            _puzzleLayer.moveBall.updateIndicator(puzzleLogic.checkValidDir(), puzzleLogic.getCurrentDir());
+            if( puzzleLogic.checkSwap(p1,p2) == true ) {
+
+              movepath.push(dstpos);
+              tolist[originpos] = dstpos;
+              tolist[dstpos] = srcpos;
+
+    //          cc.log(tolist);
+    //          cc.log(srcpos+" -> "+dstpos);
+
+              srcpos = dstpos;
+            }
+            else {
+              break;
+            }
 
           }
+        }
+
+        //パス更新
+        for(i=0 ; i < movepath.length ; i++) {
+          var pos = puzzleLogic.indexToPos(movepath[i]);
+
+          puzzleLogic.movePuzzle(pos);
+        }
 
 
-          //演出は後で
-          _puzzleLayer.swapPuzzleBall(_puzzleLayer.currentBall, ball);
+        //移動
+        _puzzleLayer.swapPuzzleBallMulti(tolist);
 
-          if (puzzleLogic.getPuzzleMatchTiming() == PZG_BALL_MATCH_TIMING_EARLY) {
-            //すぐにマッチチェック
-            _puzzleLayer.checkMatchPuzzle();
 
-            if (_puzzleLayer.currentBall.isMoving == true) {
-              //移動させたやつが消えたので操作できなくする
-              _puzzleLayer.currentBall = null;
-              _puzzleLayer.moveBall.removeFromParent();
-              _puzzleLayer.moveBall = null;
+        if (puzzleLogic.getPuzzleMatchTiming() == PZG_BALL_MATCH_TIMING_EARLY) {
+          //すぐにマッチチェック
+          _puzzleLayer.checkMatchPuzzle();
 
-              //操作終了
-              puzzleLogic.onBallRelease();
+          if (_puzzleLayer.currentBall.isMoving == true) {
+            //移動させたやつが消えたので操作できなくする
+            _puzzleLayer.currentBall = null;
+            _puzzleLayer.moveBall.removeFromParent();
+            _puzzleLayer.moveBall = null;
+
+            //操作終了
+            puzzleLogic.onBallRelease();
+
+          }
+        }
+
+
+
+
+
+
+
+      } else {
+
+
+        //入れ替えチェック
+        var ball = this.getTouchBall(touch);
+        if (ball != null && ball.isPuzzleActive() == true) {
+
+
+          var pos1 = _puzzleLayer.currentBall.getBallPosition();
+          var pos2 = ball.getBallPosition();
+
+          if (puzzleLogic.checkSwap(pos1, pos2) == true) {
+
+            //OKなので位置替え
+            puzzleLogic.movePuzzle(pos2);
+
+            //行ける方向更新
+            if (puzzleLogic.enableDirRestriction() == true) {
+              //          if (puzzleLogic.enableMyCharMode() == true) {
+              _puzzleLayer.moveBall.updateIndicator(puzzleLogic.checkValidDir(), puzzleLogic.getCurrentDir());
 
             }
+
+
+            //演出は後で
+            _puzzleLayer.swapPuzzleBall(_puzzleLayer.currentBall, ball);
+
+            if (puzzleLogic.getPuzzleMatchTiming() == PZG_BALL_MATCH_TIMING_EARLY) {
+              //すぐにマッチチェック
+              _puzzleLayer.checkMatchPuzzle();
+
+              if (_puzzleLayer.currentBall.isMoving == true) {
+                //移動させたやつが消えたので操作できなくする
+                _puzzleLayer.currentBall = null;
+                _puzzleLayer.moveBall.removeFromParent();
+                _puzzleLayer.moveBall = null;
+
+                //操作終了
+                puzzleLogic.onBallRelease();
+
+              }
+            }
+
+
           }
 
-
         }
+
+
 
       }
 
@@ -1391,7 +1734,12 @@ var puzzleLayerListener = cc.EventListener.create({
 
     var delta = touch.getDelta();
     var stpos = touch.getPreviousLocation();
-    var tp = touch.getLocation();
+
+
+    var vorigin = cc.director.getVisibleOrigin();
+    var vsize = cc.director.getVisibleSize();
+    stpos.x -= vorigin.x;
+    stpos.y -= vorigin.y;
 
     //    cc.log(stpos.x+","+stpos.y+" -> "+tp.x+","+tp.y);
 
@@ -1402,22 +1750,18 @@ var puzzleLayerListener = cc.EventListener.create({
     var pixel = _puzzleLayer.ballPixelSize / 5;
 
     var cnt = Math.floor(distmax / pixel);
-    //    cc.log("distmax "+distmax+",cnt "+cnt);
+//    cc.log("distmax "+distmax+",cnt "+cnt);
 
 
     var path = [];
 
     var startballpos = _puzzleLayer.screenPosToIndex(stpos.x, stpos.y);
 
-    if (cnt == 0) {
+    if( cnt == 0 ) {
+      cnt = 1;
+    }
 
-
-      var prev = _puzzleLayer.screenPosToIndex(tp.x, tp.y);
-      if (prev != -1) {
-        path.push(prev);
-      }
-
-    } else if (cnt > 0) {
+    if (cnt > 0) {
 
       var addx = delta.x / cnt;
       var addy = delta.y / cnt;
@@ -1425,7 +1769,11 @@ var puzzleLayerListener = cc.EventListener.create({
       var touchx = stpos.x;
       var touchy = stpos.y;
 
-      var prev = -1
+//      var prev = -1;
+
+      var prev = startballpos;
+      path.push(startballpos);
+//      cc.log("startpos "+startballpos);
 
       var i;
       for (i = 0; i < cnt; i++) {
@@ -1433,15 +1781,19 @@ var puzzleLayerListener = cc.EventListener.create({
         touchx += addx;
         touchy += addy;
 
-        //        cc.log(touchx + "," + touchy);
 
         var idx = _puzzleLayer.screenPosToIndex(touchx, touchy);
 
+//        cc.log(touchx + "," + touchy+","+idx);
+
         if (idx != -1 && prev != idx) {
+
+//          cc.log("move "+prev+"->"+idx);
 
           //隣り合っていない場合は適当に補完してみる
           if (prev != -1) {
             var diff = idx - prev;
+//            cc.log("hokan? abs="+Math.abs(diff)+",abs2="+Math.abs(diff));
             if (Math.abs(diff) != 1 && Math.abs(diff) != wcnt) {
 
               //斜めの４パターン決め打ち対応
@@ -1456,10 +1808,10 @@ var puzzleLayerListener = cc.EventListener.create({
                 path.push(hokan);
               }
 
-              //              cc.log("隣じゃない? " + prev + " -> " + idx + ",補完 " + hokan);
             }
           }
 
+//          cc.log("add "+idx);
           path.push(idx);
 
           prev = idx;
@@ -1479,7 +1831,7 @@ var puzzleLayerListener = cc.EventListener.create({
     //    cc.log("addxy " + addx + "," + addy);
 
     if (path.length > 1) {
-      cc.log("trace "+startballpos+" -> " + path);
+      cc.log("trace " + startballpos + " -> " + path);
     }
 
     return path;
@@ -1498,7 +1850,7 @@ var puzzleLayerListener = cc.EventListener.create({
     }
 
     //マッチチェック
-    if (puzzleLogic.getPuzzleMatchTiming() == PZG_BALL_MATCH_TIMING_END) {
+    if (puzzleLogic.getPuzzleMatchTiming() == PZG_BALL_MATCH_TIMING_END || puzzleLogic.enableMyCharMode() == false ) {
       _puzzleLayer.checkMatchPuzzle();
     }
 
@@ -1520,7 +1872,7 @@ var puzzleLayerListener = cc.EventListener.create({
     }
 
     //マッチチェック
-    if (puzzleLogic.getPuzzleMatchTiming() == PZG_BALL_MATCH_TIMING_END) {
+    if (puzzleLogic.getPuzzleMatchTiming() == PZG_BALL_MATCH_TIMING_END || puzzleLogic.enableMyCharMode() == false ) {
       _puzzleLayer.checkMatchPuzzle();
     }
 

@@ -45,6 +45,9 @@ function PuzzleLogic() {
   //操作中か
   var isBallOperationNow = false;
 
+  //複数入れ替えするか
+  var enableMultiSwap = false;
+
   //PZG_RULE_TYPEで初期値を変える
   if (PZG_RULE_TYPE == 0 || PZG_RULE_TYPE == 4) {
     //A
@@ -61,6 +64,8 @@ function PuzzleLogic() {
       //消すタイミング
       puzzleMatchTiming = PZG_BALL_MATCH_TIMING_END;
 
+      enableMultiSwap = true;
+
     } else if (PZG_RULE_TYPE == 4) {
       //A2
 
@@ -72,7 +77,11 @@ function PuzzleLogic() {
       controlTimeLimit = PZG_CONTROL_TIME_MAX;
 
       //消すタイミング
-      puzzleMatchTiming = PZG_BALL_MATCH_TIMING_EARLY;
+      puzzleMatchTiming = PZG_BALL_MATCH_TIMING_END;
+//      puzzleMatchTiming = PZG_BALL_MATCH_TIMING_EARLY;
+
+      //早い入れ替え
+      enableMultiSwap = true;
     }
 
     //縦横数
@@ -150,6 +159,8 @@ function PuzzleLogic() {
 
     //操作制限時間なし
     enableControlTime = false;
+
+    enableMultiSwap = false;
 
   }
 
@@ -265,6 +276,16 @@ function PuzzleLogic() {
     //    cc.log("PuzzleLogic::posToIndex x="+x+",y="+y+" -> "+idx);
 
     return idx;
+  }
+  //0 -> (0,0)
+  this.indexToPos = function(index) {
+
+    var x = Math.floor(index % puzzleWidthCount);
+    var y = Math.floor(index / puzzleWidthCount);
+
+//    cc.log("PuzzleLogic::indexToPos idx="+index+" -> x="+x+",y="+y);
+
+    return cc.p(x,y);
   }
 
 
@@ -667,6 +688,9 @@ function PuzzleLogic() {
   }
   this.getControlTimeLimit = function() {
     return controlTimeLimit;
+  }
+  this.enableMultiSwap = function() {
+    return enableMultiSwap;
   }
 
 

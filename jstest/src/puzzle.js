@@ -91,6 +91,14 @@ var PuzzleMainLayer = cc.Layer.extend({
       it.setAnchorPoint(0.5,0.5);
       list.push(it);
 
+      it = new cc.MenuItemFont("TEST",this.onMenu2,this);
+      it.setColor( cc.color(255,0,0,255) );
+      it.setScale(1.0);
+      it.setPosition(size.width/2,size.height*0.85);
+      it.setAnchorPoint(0.5,0.5);
+      list.push(it);
+
+
       var m = new cc.Menu(list);
       m.ignoreAnchorPointForPosition(false);
       this.addChild(m);
@@ -250,7 +258,11 @@ var PuzzleMainLayer = cc.Layer.extend({
   onMenu1: function(sender) {
 //    cc.log("menu1");
     cc.director.runScene(new HelloWorldScene());
+  },
+  onMenu2: function(sender) {
+    _puzzleLayer.testPuzzle1();
   }
+
 
 });
 
